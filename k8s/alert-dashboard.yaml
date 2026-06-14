@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-dashboard
+  namespace: falco-demo
+  labels:
+    app: alert-dashboard
+    role: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-dashboard
+  template:
+    metadata:
+      labels:
+        app: alert-dashboard
+        role: monitoring
+    spec:
+      containers:
+        - name: alert-dashboard
+          image: alert-dashboard:v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-dashboard
+  namespace: falco-demo
+  labels:
+    app: alert-dashboard
+spec:
+  selector:
+    app: alert-dashboard
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

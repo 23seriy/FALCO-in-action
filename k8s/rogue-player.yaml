@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rogue-player
+  namespace: falco-demo
+  labels:
+    app: rogue-player
+    role: attacker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rogue-player
+  template:
+    metadata:
+      labels:
+        app: rogue-player
+        role: attacker
+    spec:
+      # Intentionally insecure — runs as root for the demo
+      containers:
+        - name: rogue-player
+          image: rogue-player:v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          # No securityContext — deliberately running as root
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rogue-player
+  namespace: falco-demo
+  labels:
+    app: rogue-player
+spec:
+  selector:
+    app: rogue-player
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

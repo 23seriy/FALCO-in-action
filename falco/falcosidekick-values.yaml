@@ -1,0 +1,16 @@
+# Falcosidekick Helm values — routes Falco alerts to our alert-dashboard
+config:
+  webhook:
+    # This points to the alert-dashboard Service inside the cluster
+    address: "http://alert-dashboard.falco-demo.svc.cluster.local:8080/webhook"
+    minimumpriority: ""
+
+# Enable the Falcosidekick UI for a built-in web interface
+webui:
+  enabled: true
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 2802
+  redis:
+    storageEnabled: false

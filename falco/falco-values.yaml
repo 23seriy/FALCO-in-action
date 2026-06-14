@@ -1,0 +1,27 @@
+# Falco Helm values for the demo cluster
+#
+# Uses the modern eBPF driver (no kernel module compilation needed).
+# Loads custom rules from the ConfigMap created by our deploy script.
+
+driver:
+  kind: modern_ebpf
+
+falcosidekick:
+  enabled: true
+  # Falcosidekick will be installed separately for cleaner configuration
+
+# Enable JSON output for structured log parsing
+falco:
+  json_output: true
+  json_include_output_property: true
+  log_level: info
+  # Watch ConfigMap for custom rules (hot-reload)
+  watch_config_files: true
+
+# Mount custom rules
+customRules:
+  custom-rules.yaml: |-
+    # This will be overridden by the deploy script which reads from
+    # falco/custom-rules.yaml — see 03-deploy-app.sh
+
+tty: false
