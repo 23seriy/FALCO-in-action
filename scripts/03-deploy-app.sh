@@ -24,6 +24,15 @@ echo "  Falco in Action — Build & Deploy"
 echo "================================================"
 echo ""
 
+# ---- Verify kubectl context --------------------------------------------------
+
+CURRENT_CTX=$(kubectl config current-context 2>/dev/null || true)
+if [[ "$CURRENT_CTX" != "$PROFILE" ]]; then
+    warn "kubectl context is '$CURRENT_CTX', expected '$PROFILE'."
+    warn "Switching context..."
+    kubectl config use-context "$PROFILE" || { echo "❌ Failed to switch context. Run 02-start-cluster.sh first."; exit 1; }
+fi
+
 # ---- Build Images Inside Minikube -------------------------------------------
 # Uses 'minikube image build' which works with containerd runtime directly.
 # No need for 'docker-env' which is experimental with containerd.
@@ -41,6 +50,9 @@ minikube image build -t alert-dashboard:v1 "$PROJECT_DIR/apps/alert-dashboard" -
 
 info "Creating namespace..."
 kubectl apply -f "$PROJECT_DIR/k8s/namespace.yaml"
+
+info "Applying network policies (default-deny + selective allow)..."
+kubectl apply -f "$PROJECT_DIR/k8s/network-policy.yaml"
 
 # ---- Load Custom Falco Rules ------------------------------------------------
 

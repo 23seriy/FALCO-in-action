@@ -17,6 +17,7 @@ spec:
         app: arena-security-api
         role: compliant
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: arena-security-api
           image: arena-security-api:v1

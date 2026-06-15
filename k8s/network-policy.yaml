@@ -1,0 +1,79 @@
+# =============================================================================
+# NetworkPolicy — Default deny + selective allow
+# =============================================================================
+# Best practice: deny all traffic by default, then explicitly allow what's needed.
+# This is the network-level equivalent of "least privilege."
+#
+# In this demo:
+# - arena-security-api: only accepts ingress from within the namespace
+# - alert-dashboard: accepts ingress from falco-system (Falcosidekick) + falco-demo
+# - rogue-player: intentionally has NO NetworkPolicy (the "bad" pod)
+# =============================================================================
+
+# Default deny all ingress in the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: falco-demo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# Allow ingress to arena-security-api from within the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-arena-security-api
+  namespace: falco-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: arena-security-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: falco-demo
+
+---
+# Allow ingress to alert-dashboard from Falcosidekick (falco-system) and local namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-alert-dashboard
+  namespace: falco-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: alert-dashboard
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: falco-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: falco-demo
+
+---
+# Allow ingress to rogue-player — intentionally open for the demo
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-rogue-player
+  namespace: falco-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: rogue-player
+  policyTypes:
+    - Ingress
+  ingress:
+    - {}

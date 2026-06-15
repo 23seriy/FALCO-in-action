@@ -20,7 +20,7 @@ falco-in-action/
 │   ├── arena-security-api/     # Compliant NBA arena security service
 │   ├── rogue-player/           # Attack simulation pod (runs as root)
 │   └── alert-dashboard/        # Falcosidekick webhook receiver
-├── k8s/                        # Kubernetes manifests
+├── k8s/                        # Kubernetes manifests + NetworkPolicy
 ├── falco/                      # Falco custom rules and Helm values
 ├── scripts/                    # Numbered automation scripts
 ├── docs/                       # Medium article and extra documentation
@@ -65,8 +65,7 @@ curl http://localhost:9082/alerts/summary
 
 ### Rebuild images after code changes
 ```bash
-eval $(minikube docker-env -p falco-demo)
-docker build -t rogue-player:v1 apps/rogue-player
+minikube image build -t rogue-player:v1 apps/rogue-player -p falco-demo
 kubectl rollout restart deployment/rogue-player -n falco-demo
 ```
 
@@ -82,3 +81,6 @@ kubectl rollout restart deployment/rogue-player -n falco-demo
 3. **Falcosidekick + custom webhook** — Shows real-world alert routing (not just logs).
 4. **Custom rules in falco/custom-rules.yaml** — Loaded via Helm `--set-file` to demonstrate rule authoring.
 5. **NBA theme consistency** — Same pattern as other *-in-action projects.
+6. **MITRE ATT&CK mapping** — Every custom rule tagged with technique IDs (T1041, T1496, etc.).
+7. **automountServiceAccountToken: false** — Compliant pods don't mount the SA token (best practice).
+8. **NetworkPolicy default-deny** — Ingress locked down per pod, rogue-player intentionally open for demo.

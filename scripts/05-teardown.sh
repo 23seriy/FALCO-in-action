@@ -22,6 +22,24 @@ echo "  Falco in Action — Teardown"
 echo "================================================"
 echo ""
 
+# ---- Confirmation prompt -----------------------------------------------------
+
+echo "⚠️  This will:"
+echo "   • Delete the falco-demo namespace and all demo pods"
+echo "   • Uninstall Falco and Falcosidekick"
+echo "   • Delete the '$PROFILE' Minikube cluster entirely"
+echo ""
+read -r -p "Are you sure? (y/N) " confirm
+case "$confirm" in
+    [yY][eE][sS]|[yY]) ;;
+    *)
+        info "Teardown cancelled."
+        exit 0
+        ;;
+esac
+
+echo ""
+
 # ---- Delete demo namespace ---------------------------------------------------
 
 info "Deleting demo namespace..."

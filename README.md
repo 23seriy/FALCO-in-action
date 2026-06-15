@@ -111,7 +111,7 @@ Creates the `falco-demo` Minikube profile on **Kubernetes v1.32.0** with the **c
 ./scripts/03-deploy-app.sh
 ```
 
-Builds Docker images inside Minikube's Docker daemon, loads custom Falco rules, and deploys all three demo apps.
+Builds container images inside Minikube using `minikube image build`, loads custom Falco rules with MITRE ATT&CK tags, applies NetworkPolicies, and deploys all three demo apps.
 
 ### Step 4: Access the Apps
 
@@ -240,8 +240,33 @@ Review all Falco alerts from the demo:
 
 ```bash
 kubectl logs -n falco-system -l app.kubernetes.io/name=falco --tail=500 | \
-  grep -oP '"rule":"[^"]*"' | sort | uniq -c | sort -rn
+  grep -oE '"rule":"[^"]*"' | sort | uniq -c | sort -rn
 ```
+
+## 🗺️ MITRE ATT&CK Mapping
+
+Every demo scenario maps to a real-world attack technique from the [MITRE ATT&CK for Containers](https://attack.mitre.org/matrices/enterprise/containers/) framework:
+
+| Scenario | MITRE Technique | Technique ID | Falco Rule | Priority |
+|---|---|---|---|---|
+| Shell in Container | [Exec Into Container](https://attack.mitre.org/techniques/T1609/) | T1609 | Terminal shell in container *(built-in)* | Warning |
+| Read Sensitive File | [Unsecured Credentials](https://attack.mitre.org/techniques/T1552/) | T1552 | Read sensitive file untrusted *(built-in)* | Warning |
+| Write Below Binary Dir | [Implant Internal Image](https://attack.mitre.org/techniques/T1525/) | T1525 | Write below binary dir *(built-in)* | Error |
+| Package Management | [Ingress Tool Transfer](https://attack.mitre.org/techniques/T1105/) | T1105 | Launch Package Management *(built-in)* | Error |
+| K8s Credential Theft | [Unsecured Credentials: Container API](https://attack.mitre.org/techniques/T1552/007/) | T1552.007 | Arena Pod Reading K8s Secrets *(custom)* | Critical |
+| Outbound Connection | [Exfiltration Over C2 Channel](https://attack.mitre.org/techniques/T1041/) | T1041 | Arena Pod Making Outbound Connection *(custom)* | Warning |
+| Crypto Mining | [Resource Hijacking](https://attack.mitre.org/techniques/T1496/) | T1496 | Arena Pod Crypto Mining Activity *(custom)* | Critical |
+
+## 🛡️ Kyverno + Falco: Defense in Depth
+
+| Layer | Tool | When | What It Catches | Example |
+|---|---|---|---|---|
+| **Admission** | Kyverno | Before pod starts | Bad *configuration* | Missing labels, `:latest` tags, root containers |
+| **Runtime** | Falco | While pod runs | Bad *behavior* | Shell access, credential theft, crypto mining |
+
+A pod can pass every admission policy and still be compromised at runtime. You need both layers.
+
+See: [kyverno-in-action](https://github.com/23seriy/kyverno-in-action) for the admission control side.
 
 ## 🔧 Useful Commands
 
@@ -296,7 +321,8 @@ falco-in-action/
 │   ├── namespace.yaml            # falco-demo
 │   ├── arena-security-api.yaml   # Compliant Deployment + Service
 │   ├── rogue-player.yaml         # Attacker Deployment + Service (no securityContext)
-│   └── alert-dashboard.yaml      # SOC Deployment + Service
+│   ├── alert-dashboard.yaml      # SOC Deployment + Service
+│   └── network-policy.yaml       # Default-deny + selective allow policies
 ├── falco/                        # Falco configuration
 │   ├── custom-rules.yaml         # 5 custom detection rules (NBA-themed)
 │   ├── falco-values.yaml         # Falco Helm values (eBPF driver)
@@ -329,15 +355,17 @@ Deletes all demo resources, uninstalls Falco and Falcosidekick, and removes the 
 
 ## 💡 Key Takeaways
 
-1. **Admission control isn't enough.** A perfectly compliant pod can still be compromised at runtime. Falco watches what containers actually *do*, not just how they're configured.
+1. **Admission control isn't enough.** A perfectly compliant pod can still be compromised at runtime. The 2024 Kubernetes security report found that 89% of clusters had at least one container with a known vulnerability. Falco watches what containers actually *do*, not just how they're configured.
 
-2. **eBPF is the enabler.** Falco's modern eBPF driver monitors kernel syscalls without kernel modules, sidecars, or code changes. Zero instrumentation of your apps.
+2. **eBPF is the enabler.** Falco's modern eBPF driver monitors kernel syscalls without kernel modules, sidecars, or code changes. Zero instrumentation of your apps. It's why Datadog, Cilium, and Falco all bet on eBPF.
 
-3. **Custom rules close the gap.** Default rules cover 80% of threats. Write custom rules for your environment: unexpected outbound connections, credential access patterns, mining indicators.
+3. **Custom rules close the gap.** Default rules cover 80% of threats. The remaining 20% is *your* environment: unexpected outbound connections, credential access patterns, mining indicators. Writing custom rules is straightforward — see `falco/custom-rules.yaml`.
 
-4. **Alert routing makes it actionable.** Falcosidekick routes alerts to Slack, PagerDuty, SIEM, or custom webhooks. Detection without notification is just logging.
+4. **Alert routing makes it actionable.** Falcosidekick routes alerts to 60+ outputs: Slack, PagerDuty, SIEM, S3, Elasticsearch, or custom webhooks. Detection without notification is just logging.
 
-5. **Defense in depth is not optional.** Kyverno at admission + Falco at runtime = no blind spots. Layer your defenses like an NBA arena layers its security: ID checks at the door, cameras inside, and a SOC watching the feeds.
+5. **Map to MITRE ATT&CK.** Every rule should map to a MITRE technique. This gives your SOC team a common language and helps prioritize response. See the [mapping table](#️-mitre-attck-mapping) above.
+
+6. **Defense in depth is not optional.** Kyverno at admission + Falco at runtime = no blind spots. Layer your defenses like an NBA arena layers its security: ID checks at the door, cameras inside, and a SOC watching the feeds.
 
 ## 📚 Resources
 
