@@ -24,21 +24,18 @@ echo "  Falco in Action — Build & Deploy"
 echo "================================================"
 echo ""
 
-# ---- Point Docker at Minikube -----------------------------------------------
-
-info "Configuring Docker to use Minikube's daemon..."
-eval $(minikube docker-env -p "$PROFILE")
-
-# ---- Build Images ------------------------------------------------------------
+# ---- Build Images Inside Minikube -------------------------------------------
+# Uses 'minikube image build' which works with containerd runtime directly.
+# No need for 'docker-env' which is experimental with containerd.
 
 info "Building arena-security-api..."
-docker build -t arena-security-api:v1 "$PROJECT_DIR/apps/arena-security-api"
+minikube image build -t arena-security-api:v1 "$PROJECT_DIR/apps/arena-security-api" -p "$PROFILE"
 
 info "Building rogue-player..."
-docker build -t rogue-player:v1 "$PROJECT_DIR/apps/rogue-player"
+minikube image build -t rogue-player:v1 "$PROJECT_DIR/apps/rogue-player" -p "$PROFILE"
 
 info "Building alert-dashboard..."
-docker build -t alert-dashboard:v1 "$PROJECT_DIR/apps/alert-dashboard"
+minikube image build -t alert-dashboard:v1 "$PROJECT_DIR/apps/alert-dashboard" -p "$PROFILE"
 
 # ---- Create Namespace --------------------------------------------------------
 

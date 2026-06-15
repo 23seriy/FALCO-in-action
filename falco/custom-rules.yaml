@@ -73,13 +73,15 @@
 # -----------------------------------------------------------------------------
 - rule: Arena Pod Suspicious DNS Lookup
   desc: >
-    Detect when a pod in the falco-demo namespace performs DNS lookups
-    for known-bad or suspicious domain patterns (mining pools, C2 servers).
+    Detect when a pod labeled role=attacker in the falco-demo namespace
+    performs DNS lookups. In production, you'd match on specific suspicious
+    domain patterns or non-whitelisted pods rather than a label.
   condition: >
     evt.type in (sendto, connect) and
     evt.dir = < and
     container.id != host and
     k8s.ns.name = "falco-demo" and
+    k8s.pod.label.role = "attacker" and
     fd.l4proto = udp and
     fd.sport = 53
   output: >
@@ -130,7 +132,8 @@
     evt.dir = < and
     container.id != host and
     k8s.ns.name = "falco-demo" and
-    not user.name in (root)
+    not user.name in (root) and
+    not proc.name in (runc, runc:[1:CHILD], runc:[2:INIT], containerd-shim, python, python3)
   output: >
     Privilege escalation attempt in arena pod
     (pod=%k8s.pod.name ns=%k8s.ns.name container=%container.name
