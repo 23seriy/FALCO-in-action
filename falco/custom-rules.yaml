@@ -11,6 +11,7 @@
 
 # -----------------------------------------------------------------------------
 # Rule 1: Detect outbound connections from demo pods
+# MITRE ATT&CK: T1041 (Exfiltration Over C2 Channel)
 # -----------------------------------------------------------------------------
 # NBA analogy: A player sneaking out the back door during a game.
 # In production, this catches data exfiltration or C2 callbacks.
@@ -18,8 +19,8 @@
 - rule: Arena Pod Making Outbound Connection
   desc: >
     Detect when a pod in the falco-demo namespace makes an outbound network
-    connection to an external IP address. Legitimate arena pods should only
-    talk to internal cluster services.
+    connection to an external IP address (MITRE T1041). Legitimate arena
+    pods should only talk to internal cluster services.
   condition: >
     evt.type in (connect, sendto) and
     evt.dir = < and
@@ -39,10 +40,11 @@
     image=%container.image.repository connection=%fd.name
     dest=%fd.sip:%fd.sport user=%user.name)
   priority: WARNING
-  tags: [network, nba-arena, mitre_exfiltration]
+  tags: [T1041, network, nba-arena, mitre_exfiltration]
 
 # -----------------------------------------------------------------------------
 # Rule 2: Detect Kubernetes credential access
+# MITRE ATT&CK: T1552.007 (Unsecured Credentials: Container API Server)
 # -----------------------------------------------------------------------------
 # NBA analogy: Someone rifling through the coach's playbook in the locker room.
 # In production, attackers read SA tokens to pivot within the cluster.
@@ -50,8 +52,8 @@
 - rule: Arena Pod Reading K8s Secrets
   desc: >
     Detect when a pod in the falco-demo namespace reads the Kubernetes
-    service account token. This is the first thing attackers do after
-    getting a shell in a container.
+    service account token (MITRE T1552.007). This is the first thing
+    attackers do after getting a shell in a container.
   condition: >
     open_read and
     container.id != host and
@@ -63,23 +65,26 @@
     image=%container.image.repository file=%fd.name user=%user.name
     command=%proc.cmdline)
   priority: CRITICAL
-  tags: [credential_access, nba-arena, mitre_credential_access]
+  tags: [T1552.007, credential_access, nba-arena, mitre_credential_access]
 
 # -----------------------------------------------------------------------------
-# Rule 3: Detect DNS lookups for suspicious domains
+# Rule 3: Detect DNS lookups from attacker pods
+# MITRE ATT&CK: T1071.004 (Application Layer Protocol: DNS)
 # -----------------------------------------------------------------------------
 # NBA analogy: A rogue player phoning their bookie from the arena.
 # In production, this catches C2 domain resolution and DNS tunneling.
 # -----------------------------------------------------------------------------
 - rule: Arena Pod Suspicious DNS Lookup
   desc: >
-    Detect when a pod in the falco-demo namespace performs DNS lookups
-    for known-bad or suspicious domain patterns (mining pools, C2 servers).
+    Detect when a pod labeled role=attacker in the falco-demo namespace
+    performs DNS lookups (MITRE T1071.004). In production, you'd match on
+    specific suspicious domain patterns or non-whitelisted pods.
   condition: >
     evt.type in (sendto, connect) and
     evt.dir = < and
     container.id != host and
     k8s.ns.name = "falco-demo" and
+    k8s.pod.label.role = "attacker" and
     fd.l4proto = udp and
     fd.sport = 53
   output: >
@@ -88,18 +93,19 @@
     image=%container.image.repository connection=%fd.name user=%user.name
     command=%proc.cmdline)
   priority: NOTICE
-  tags: [dns, nba-arena, mitre_command_and_control]
+  tags: [T1071.004, dns, nba-arena, mitre_command_and_control]
 
 # -----------------------------------------------------------------------------
 # Rule 4: Detect crypto mining indicators
+# MITRE ATT&CK: T1496 (Resource Hijacking)
 # -----------------------------------------------------------------------------
 # NBA analogy: Using the arena's power grid to mine bitcoin during halftime.
 # In production, cryptojacking is one of the most common container attacks.
 # -----------------------------------------------------------------------------
 - rule: Arena Pod Crypto Mining Activity
   desc: >
-    Detect connections to known mining pool ports or processes with
-    mining-related command line arguments.
+    Detect connections to known mining pool ports (MITRE T1496).
+    Cryptojacking is the #1 container attack in the wild.
   condition: >
     evt.type in (connect, sendto) and
     evt.dir = < and
@@ -112,10 +118,11 @@
     image=%container.image.repository connection=%fd.name
     dest_port=%fd.sport user=%user.name command=%proc.cmdline)
   priority: CRITICAL
-  tags: [crypto, nba-arena, mitre_resource_hijacking]
+  tags: [T1496, crypto, nba-arena, mitre_resource_hijacking]
 
 # -----------------------------------------------------------------------------
 # Rule 5: Detect privilege escalation attempts
+# MITRE ATT&CK: T1548 (Abuse Elevation Control Mechanism)
 # -----------------------------------------------------------------------------
 # NBA analogy: A benchwarmer trying to change the coach's lineup card.
 # In production, this catches setuid/setgid and other priv-esc attempts.
@@ -123,18 +130,18 @@
 - rule: Arena Pod Privilege Escalation Attempt
   desc: >
     Detect when a process in a demo pod attempts to change its user or
-    group ID (setuid/setgid syscalls), which could indicate privilege
-    escalation.
+    group ID via setuid/setgid syscalls (MITRE T1548).
   condition: >
     evt.type in (setuid, setgid, setresuid, setresgid) and
     evt.dir = < and
     container.id != host and
     k8s.ns.name = "falco-demo" and
-    not user.name in (root)
+    not user.name in (root) and
+    not proc.name in (runc, runc:[1:CHILD], runc:[2:INIT], containerd-shim, python, python3)
   output: >
     Privilege escalation attempt in arena pod
     (pod=%k8s.pod.name ns=%k8s.ns.name container=%container.name
     image=%container.image.repository user=%user.name
     command=%proc.cmdline syscall=%evt.type)
   priority: CRITICAL
-  tags: [privilege_escalation, nba-arena, mitre_privilege_escalation]
+  tags: [T1548, privilege_escalation, nba-arena, mitre_privilege_escalation]

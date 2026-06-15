@@ -17,6 +17,7 @@ spec:
         app: alert-dashboard
         role: monitoring
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: alert-dashboard
           image: alert-dashboard:v1
@@ -44,6 +45,12 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
 ---
 apiVersion: v1
 kind: Service

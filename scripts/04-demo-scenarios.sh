@@ -38,10 +38,11 @@ get_rogue_pod() {
 
 show_falco_logs() {
     local lines=${1:-10}
+    sleep 2  # Give Falco a moment to process syscall events
     echo ""
     info "Recent Falco alerts (last $lines lines):"
     echo "─────────────────────────────────────────────"
-    kubectl logs -n falco-system -l app.kubernetes.io/name=falco --tail="$lines" 2>/dev/null | \
+    kubectl logs -n falco-system -l app.kubernetes.io/name=falco --tail=50 2>/dev/null | \
         grep -i "Warning\|Critical\|Error\|Notice" | tail -"$lines" || \
         warn "No matching alerts found yet — Falco may need a moment."
     echo "─────────────────────────────────────────────"
@@ -321,7 +322,7 @@ echo ""
 info "Falco alert counts by rule (from Falco logs):"
 echo "─────────────────────────────────────────────"
 kubectl logs -n falco-system -l app.kubernetes.io/name=falco --tail=500 2>/dev/null | \
-    grep -oP '"rule":"[^"]*"' | \
+    grep -oE '"rule":"[^"]*"' | \
     sort | uniq -c | sort -rn | head -20 || \
     warn "Could not parse Falco logs."
 echo "─────────────────────────────────────────────"
