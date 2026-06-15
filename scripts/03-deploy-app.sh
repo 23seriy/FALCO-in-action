@@ -2,8 +2,8 @@
 # =============================================================================
 # 03 — Build & Deploy the Demo Applications
 # =============================================================================
-# Builds Docker images inside Minikube, loads custom Falco rules,
-# and deploys the arena-security-api, rogue-player, and alert-dashboard.
+# Builds container images via 'minikube image build', loads custom Falco
+# rules, applies NetworkPolicies, and deploys the demo applications.
 # =============================================================================
 set -euo pipefail
 

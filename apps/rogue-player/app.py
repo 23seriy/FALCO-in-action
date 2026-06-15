@@ -143,31 +143,8 @@ def attack_package():
     """Trigger: Launch Package Management Process in Container."""
     logger.info("ATTACK: Running package manager")
     try:
-        # Try apt first (Debian-based), fall back to apk (Alpine)
-        for cmd in ["apt", "apt-get", "apk"]:
-            try:
-                result = subprocess.run(
-                    [cmd, "--version"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                )
-                if result.returncode == 0 or result.stdout:
-                    return jsonify(
-                        {
-                            "attack": "package_management",
-                            "falco_rule": "Launch Package Management Process in Container",
-                            "command": f"{cmd} --version",
-                            "output": result.stdout.strip()[:200],
-                            "triggered": True,
-                        }
-                    )
-            except FileNotFoundError:
-                continue
-
-        # If no package manager found, simulate with a known binary name
         result = subprocess.run(
-            ["/bin/sh", "-c", "echo 'simulated apt-get install'"],
+            ["apt-get", "--version"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -176,7 +153,8 @@ def attack_package():
             {
                 "attack": "package_management",
                 "falco_rule": "Launch Package Management Process in Container",
-                "note": "No package manager binary found; used shell simulation",
+                "command": "apt-get --version",
+                "output": result.stdout.strip()[:200],
                 "triggered": True,
             }
         )

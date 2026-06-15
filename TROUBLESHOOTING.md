@@ -71,17 +71,14 @@ minikube delete -p falco-demo
 
 **Symptom:** Pods show `ErrImagePull` or `ImagePullBackOff`.
 
-**Cause:** Docker daemon not pointed at Minikube.
+**Cause:** Images were not built inside Minikube.
 
 **Fix:**
 ```bash
-# Re-point Docker at Minikube
-eval $(minikube docker-env -p falco-demo)
-
-# Rebuild images
-docker build -t arena-security-api:v1 apps/arena-security-api
-docker build -t rogue-player:v1 apps/rogue-player
-docker build -t alert-dashboard:v1 apps/alert-dashboard
+# Rebuild images inside Minikube
+minikube image build -t arena-security-api:v1 apps/arena-security-api -p falco-demo
+minikube image build -t rogue-player:v1 apps/rogue-player -p falco-demo
+minikube image build -t alert-dashboard:v1 apps/alert-dashboard -p falco-demo
 
 # Restart deployments
 kubectl rollout restart deployment -n falco-demo

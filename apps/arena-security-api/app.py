@@ -10,7 +10,6 @@ what normal, secure behavior looks like.
 """
 
 import os
-import json
 import logging
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
