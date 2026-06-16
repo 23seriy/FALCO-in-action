@@ -32,3 +32,4 @@ kubeconfig
 
 # Falco
 falco-alerts/
+.serena
