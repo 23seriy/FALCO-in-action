@@ -14,7 +14,7 @@ jobs:
     name: Shell Script Linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install shellcheck
         run: sudo apt-get install -y shellcheck
@@ -28,7 +28,7 @@ jobs:
     name: YAML Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install yamllint
         run: pip install yamllint
@@ -47,7 +47,7 @@ jobs:
     name: Falco Rule Syntax
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -107,7 +107,7 @@ jobs:
     name: Dockerfile Linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install hadolint
         run: |
@@ -128,7 +128,7 @@ jobs:
     name: Documentation Completeness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check required docs exist
         run: |
@@ -154,7 +154,7 @@ jobs:
     name: Script Syntax Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check bash syntax
         run: |
@@ -167,7 +167,7 @@ jobs:
     name: Python Code Quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -195,7 +195,7 @@ jobs:
     name: Markdown Linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: nosborn/github-action-markdown-cli@v3.5.0
         with:
